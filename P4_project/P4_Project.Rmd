@@ -1,0 +1,581 @@
+---
+title: "Exploraity Data Analysis"
+output: html_document
+---
+Explore and Summarize Loan Data from Prosper -- by Reem Bin Hezam
+========================================================
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk. This
+# prevents the code from displaying in the knitted HTML output. You should set
+# echo=FALSE for all code chunks in your file, unless it makes sense for your
+# report to show the code that generated a particular plot.
+
+# The other parameters for "message" and "warning" should also be set to FALSE
+# for other code chunks once you have verified that each plot comes out as you
+# want it to. This will clean up the flow of your report.
+
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(gridExtra)
+library(tidyr)
+library(MASS)
+library(scales)
+library(GGally)
+library(PerformanceAnalytics)
+library(psych)
+
+```
+
+```{r echo=FALSE, Load_the_Data}
+
+# Load the Data
+getwd()
+setwd('C:/Users/Administrator/Dropbox/Udacity/P4/project')
+# Read the csv file
+dataKey = read.csv("prosperLoanDataKey.csv")
+dataset = read.csv("prosperLoanData.csv")
+
+```
+
+
+
+# Introduction
+
+Prosper is a marketplace providing person-to-person lending utilizing a listing and bidding process to get competitive rates for loans.
+
+This analysis will explore a dataset about loan data from prosper (last updated 03/11/2014).
+
+**The dataset (link): **
+This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
+
+
+**The dataset dictionary (link):**
+This variable dictionary explains the variables in the data set.
+
+
+
+On the next section, I will start exploring and ask questions about the data set. The goal is to explore between 10-15 variables in the analysis, and try to find insights and correllations between them.
+
+# Univariate Plots Section
+
+
+
+**Summary of data: **
+
+
+```{r echo=FALSE, Univariate_Plots}
+head(dataset)
+
+#slice(dataset,1:10)
+
+summary(dataset)
+
+```
+
+
+```{r echo=FALSE, EmploymentStatus}
+
+#1.1 Employment Status
+ggplot(data = dataset, aes(EmploymentStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Employment Status') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+Most of the borrowers have jobs.
+
+```{r echo=FALSE, BorrowerAPR}
+
+#1.2. Borrower APR
+ggplot(data = dataset, aes(BorrowerAPR)) +
+  geom_histogram(fill= 'skyblue3',color = "black",binwidth=0.01) +
+  ggtitle('Borrower APR') +
+  xlab('Borrower APR') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+
+```{r echo=FALSE, BorrowerRate}
+
+#1.3. Borrower Rate
+ggplot(data = dataset, aes(BorrowerRate)) +
+  geom_histogram(fill= 'skyblue3', color = "black",binwidth=0.01) +
+  ggtitle('Borrower Rate') +
+  xlab('Borrower Rate') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+No big difference beteween Rate and APR
+
+```{r echo=FALSE, Income_Range}
+
+#1.4. Income Range
+ggplot(data = dataset, aes(IncomeRange)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Income Range') +
+  xlab('Income') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+People with very low income have very few number of loans in general.
+
+```{r echo=FALSE, DebtToIncomeRatio}
+
+#1.5. Debt To Income Ratio
+ggplot(data = dataset, aes(DebtToIncomeRatio)) +
+  geom_histogram(fill= 'skyblue3', color = "black", binwidth =0.01) +
+  xlim(0, quantile(dataset$DebtToIncomeRatio, prob = 0.99, na.rm=TRUE)) +
+  ggtitle('DebtToIncomeRatio') +
+  xlab('DebtToIncomeRatio') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+People with high debt to income ration have very few number of loans.
+
+```{r echo=FALSE, ListingCategory}
+
+#map listing numbers with names
+listingCategoryMap <- c ('Not Available' , 'Debt Consolidation ' , 'Home Improvement' , ' Business' , 'Personal Loan' , 'Student Use' , 'Auto' , 'Other' , ' Baby&Adoption' , 'Boat' , 'Cosmetic Procedure' , 'Engagement Ring' , 'Green Loans' , 'Household Expenses' , 'Large Purchases' , 'Medical/Dental' , 'Motorcycle' , 'RV' , 'Taxes' , 'Vacation' , 'Wedding Loans')
+
+dataset$ListingCategory..Alpha <- factor(dataset$ListingCategory..numeric., 
+                                  levels = c(0:20), labels = listingCategoryMap)
+
+#1.6. ListingCategory
+ggplot(data = dataset, aes(ListingCategory..Alpha)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('ListingCategory') +
+  xlab('ListingCategory') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('Count')
+
+summary(dataset$ListingCategory..Alpha)
+
+```
+
+Most loans were taken for debt consolidation.
+
+```{r echo=FALSE, LoanStatus}
+
+#1.7. LoanStatus
+ggplot(data = dataset, aes(LoanStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('LoanStatus') +
+  xlab('LoanStatus') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('Count')
+```
+
+More than one thousand loans have been chargedoff !
+
+
+```{r echo=FALSE, IsBorrowerHomeowner}
+
+#1.8. IsBorrowerHomeowner
+ggplot(data = dataset, aes(IsBorrowerHomeowner)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('IsBorrowerHomeowner') +
+  xlab('IsBorrowerHomeowner') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+Seems there is no difference on borrowing chance wether to be a home owner or not
+
+```{r echo=FALSE, EmploymentStatusDuration}
+
+#1.9. EmploymentStatusDuration
+ggplot(data = dataset, aes(EmploymentStatusDuration)) +
+geom_histogram(fill= 'skyblue3', color = "black", binwidth =12) +
+    ggtitle('EmploymentStatusDuration') +
+  xlab('EmploymentStatusDuration') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+summary(dataset$EmploymentStatusDuration)
+```
+
+New employed are the most borrowers
+
+```{r echo=FALSE, Investors}
+
+#1.10. Investors
+ggplot(data = dataset, aes(Investors)) +
+geom_histogram(fill= 'skyblue3', color = "black", binwidth =10) +
+    ggtitle('Investors') +
+  xlab('Investors') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+summary(dataset$Investors)
+```
+
+
+Most loans have only one investor
+
+
+# Univariate Analysis
+
+
+### What is the structure of your dataset?
+As mentioned above, This data set contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
+
+### What is/are the main feature(s) of interest in your dataset?
+The main feature of intrest is the loan status and the employment status and the income.
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+Other features like reason for loan and amount of loan would help in the investigation.
+
+### Did you create any new variables from existing variables in the dataset?
+Yes the alpha for the listingCategory factors since it was available on number only so I added their description.
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+No
+
+# Bivariate Plots Section
+
+
+
+In this section i will explore relationships between some pair of variables from the above analysis.
+
+
+```{r echo=FALSE, Bivariate_Plots}
+
+```
+
+```{r, Correlation_Overview}
+
+#pairs.panels(select(EmploymentStatus, LoanStatus, ListingCategory..Alpha, BorrowerAPR),
+#                            hist.col = 'skyblue3', col = 'skyblue3')
+
+
+#  above code causes this error dont know why
+#Error in select(EmploymentStatus, LoanStatus, ListingCategory..Alpha, : unused arguments (LoanStatus, ListingCategory..Alpha, BorrowerAPR)
+
+```
+ I wanted to make a Correlation_Overview matrix but the pairs.panels didnt work !!
+
+```{r echo=FALSE, LoanStatusvsEmploymentStatus}
+#2.1. LoanStatus vs EmploymentStatus
+#subset(dataset,dataset$LoanStatus == 'Completed'
+
+
+ggplot(data = subset(dataset,dataset$LoanStatus == 'Completed'),
+                     aes(EmploymentStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Completed LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+ggplot(data = subset(dataset,dataset$LoanStatus == 'Past Due (91-120 days)'),
+                     aes(EmploymentStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Past Due (91-120 days) LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+ggplot(data = subset(dataset,dataset$LoanStatus == 'Chargedoff'),
+                     aes(EmploymentStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Chargedoff LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Chargedoff Count')
+
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+  geom_point(alpha=0.1,color= 'skyblue3') +
+  ggtitle('LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+  geom_jitter(alpha=0.1,color= 'skyblue3') +
+  ggtitle('LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus )) +
+  geom_jitter(alpha=0.01 ,color= 'skyblue3') +
+  ggtitle('LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count') 
+
+
+#not intended output !
+ ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus )) + 
+      geom_bar(aes(y = (..count..)/sum(..count..)), fill= 'skyblue3') + 
+    scale_y_continuous(labels  = percent) +
+ ggtitle('LoanStatus vs EmploymentStatus') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+ 
+ #error
+ #ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+#  geom_jitter(alpha=0.1,aes(y = (..count..)/sum(..count..)), fill= 'skyblue3') +
+#  ggtitle('LoanStatus vs EmploymentStatus') +
+#  xlab('Employment Status') +
+#  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+#  ylab('Count')
+
+
+```
+
+Surprisingly most of the charged of were full time employed !
+But in order to be more specific, the percentage of the borrowers rather than their count should be taken into account.
+But unfortunatily this didnt work I couldnt figure out how to implement it!!
+```{r echo=FALSE, LoanStatusVsIncome}
+#2.2. LoanStatus vs income
+
+
+ggplot(data = dataset, aes( x =LoanStatus , y = StatedMonthlyIncome )) +
+  geom_boxplot(aes(fill = LoanStatus)) +
+  xlab('LoanStatus ') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('Monthly Income')
+  ggtitle("Monthly Income vs LoanStatus")
+  
+  
+  ggplot(data = dataset, aes( x =LoanStatus , y = StatedMonthlyIncome )) +
+  geom_jitter(alpha=0.1,color= 'skyblue3') +
+  xlab('LoanStatus ') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('Monthly Income')
+  ggtitle("Monthly Income vs LoanStatus")
+  
+  #remove outlier
+  ggplot(data = subset(dataset,dataset$StatedMonthlyIncome > 0 &
+                         dataset$StatedMonthlyIncome < 25000) ,
+  aes( x =LoanStatus , y = StatedMonthlyIncome )) +
+  geom_jitter(alpha=0.01,color= 'skyblue3') +
+  xlab('LoanStatus ') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('Monthly Income')
+  ggtitle("Monthly Income vs LoanStatus")
+
+```
+
+Could not find big relation between loan status and income !
+```{r echo=FALSE, EmploymentStatusvsBorrowerRate}
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=BorrowerRate)) +
+  geom_jitter(alpha=0.05,color= 'skyblue3') +
+  ggtitle('EmploymentStatus vs BorrowerRate') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+```
+most Not employed has high borrower rate (about 0.35)
+
+# Bivariate Analysis
+
+
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+Surprisingly most of the charged of were full time employed !
+
+and most Not employed has high borrower rate (about 0.35)
+
+
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+No
+
+### What was the strongest relationship you found?
+
+There is no strong relationship !!!
+
+# Multivariate Plots Section
+
+
+
+In this section i will explore relationships between a number of variables from the dataset.
+
+
+```{r echo=FALSE, Multivariate_Plots}
+
+```
+
+
+```{r echo=FALSE, Multivariate_Plots1}
+year = format(as.Date(dataset$LoanOriginationDate), "%Y")
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+  geom_point(aes(color =  year), 
+             position = position_jitter(h = 0)) +
+  ggtitle('LoanStatus vs EmploymentStatus by Year') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+  geom_count(aes(color =  year), 
+             position = position_jitter(h = 0)) +
+  ggtitle('LoanStatus vs EmploymentStatus by Year') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+
+  
+
+```
+
+Most of current loans are in 2013 and 2014 for employed borrowers.
+
+```{r echo=FALSE, Multivariate_Plots2}
+
+
+
+ggplot(data = dataset, aes(y=BorrowerAPR, x=LoanStatus)) +
+  geom_point(aes(color =  EmploymentStatus), 
+             position = position_jitter(h = 0)) +
+ggtitle('LoanStatus and BorrowerAPR for EmploymentStatus') +
+  xlab('LoanStatus') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('BorrowerAPR')
+
+
+ggplot(data = dataset, aes(y=BorrowerAPR, x=LoanStatus)) +
+  geom_count(aes(color =  EmploymentStatus)) +
+ggtitle('LoanStatus and BorrowerAPR for EmploymentStatus') +
+  xlab('LoanStatus') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('BorrowerAPR')
+
+
+ggplot(data = dataset, aes(y=BorrowerAPR, x=LoanStatus)) +
+  geom_count(aes(color =  EmploymentStatus)) +
+ggtitle('LoanStatus and BorrowerAPR for EmploymentStatus') +
+  xlab('LoanStatus') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('BorrowerAPR')
+
+
+
+ggplot(data = subset(dataset,dataset$EmploymentStatus == 'Employed' | 
+                       dataset$EmploymentStatus == 'Retired'  | 
+                       dataset$EmploymentStatus == 'Not employed'),
+                     aes(y=BorrowerAPR, x=LoanStatus)) +
+  geom_count(aes(color =  EmploymentStatus)) +
+ggtitle('LoanStatus and BorrowerAPR for EmploymentStatus') +
+  xlab('LoanStatus') +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  ylab('BorrowerAPR')
+
+
+
+  
+
+```
+
+Most charged off loans have high APR. On hte other hand also most completed loans have high APR !!
+Very few retired have past due loan status
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+Most of current loans are in 2013 and 2014 for employed borrowers.
+
+
+### Were there any interesting or surprising interactions between features?
+Not sure ! factore are too much to be able to find relationships among them !!
+
+### OPTIONAL: Did you create any models with your dataset? Discuss the \
+strengths and limitations of your model.
+
+------
+
+# Final Plots and Summary
+
+
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+
+#1.1 Employment Status
+ggplot(data = dataset, aes(EmploymentStatus)) +
+  geom_bar(fill= 'skyblue3') +
+  ggtitle('Employment Status') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Number of Loans')
+```
+
+### Description One
+
+Most of the borrowers have jobs. More than half of the dataset are employed. about 25000 have a full time job. Which means that being employed is an important factore to get a loan.
+
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+
+ggplot(data = dataset, aes(x=EmploymentStatus, y=BorrowerRate)) +
+  geom_jitter(alpha=0.01,color= 'skyblue3') +
+  ggtitle('EmploymentStatus vs BorrowerRate') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Borrower Rate')
+
+```
+
+### Description Two
+
+most of the not employed or self emplyed borrowers have a high borrower rate, while the employed borrowers have more chance to get lower borrower rate.
+
+
+### Plot Three
+```{r echo=FALSE, Plot_Three}
+ggplot(data = dataset, aes(x=EmploymentStatus, y=LoanStatus)) +
+  geom_count(aes(color =  year), 
+             position = position_jitter(h = 0)) +
+  ggtitle('LoanStatus vs EmploymentStatus by Year') +
+  xlab('Employment Status') +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) +
+  ylab('Count')
+```
+
+### Description Three
+Year 2013 then 2014 have the most number of current loans.
+
+------
+
+# Reflection
+
+Data needs to be categorized in a better way! what is the different between emplyed and full-time vs part time ?
+
+Too many factors and variables makes it difficult to explore related ones.
+
+The most useful insights come from the simple one variable analysis.
